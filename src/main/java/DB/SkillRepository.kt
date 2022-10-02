@@ -1,0 +1,4 @@
+package DB
+
+class SkillRepository {
+}
