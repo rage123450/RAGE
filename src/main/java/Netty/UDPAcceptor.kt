@@ -10,7 +10,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel
 class UDPAcceptor : Runnable {
 
     override fun run() {
-        val port = 9400/*9301*/
+        val port = 9301/*9400*/
         // Taken from http://netty.io/wiki/user-guide-for-4.x.html
 
         val workerGroup: EventLoopGroup = NioEventLoopGroup()

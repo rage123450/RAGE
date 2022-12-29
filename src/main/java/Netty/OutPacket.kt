@@ -30,17 +30,18 @@ class OutPacket {
         end(op)
     }
 
+/*    constructor(op: EventID) {
+        end(op)
+    }*/
+
     constructor(b: Boolean) {
         udp = b
     }
 
-    /**
-     * Encodes a byte to this OutPacket.
-     *
-     * @param b The byte to encode.
-     */
-    fun encodeByte(n: Number) {
-        buf.writeByte(n.toInt())
+    fun e1() = encodeByte(0)
+
+    fun encodeByte(b: Int) {
+        buf.writeByte(b)
     }
 
     /**
@@ -49,12 +50,14 @@ class OutPacket {
      *
      * @param bArr The byte array to encode.
      */
-    fun encodeArr(bArr: ByteArray?) {
-        buf.writeBytes(bArr)
+    fun encodeArr(bArr: ByteArray) {
+        for (b in bArr) {
+            encodeByte(b.toInt())
+        }
     }
 
     fun encodeArr(s: String) {
-        buf.writeBytes(Util.getByteArrayByString(s))
+        encodeArr(Util.getByteArrayByString(s))
     }
 
     /**
@@ -79,15 +82,13 @@ class OutPacket {
         buf.writeInt(if(b) 1 else 0)
     }
 
-    /**
-     * Encodes a short to this OutPacket, in little endian.
-     *
-     * @param s The short to encode.
-     */
+    fun e2() = encodeShort(0)
 
     fun encodeShort(n: Number) {
         buf.writeShort(n.toInt())
     }
+
+    fun e4() = encodeInt(0)
 
     fun encodeInt(n: Number) {
         buf.writeInt(n.toInt())
@@ -97,18 +98,26 @@ class OutPacket {
         buf.writeIntLE(n.toInt())
     }
 
+    fun e8() = encodeLong(0)
+
     fun encodeLong(n: Number) {
         buf.writeLong(n.toLong())
     }
 
+    fun es() = encodeString("")
+
     fun encodeString(s: String) = encodeString(s, true)
 
-    fun encodeString(s: String, W: Boolean) {
-        val sa = s.toByteArray(if(W) UTF16LE else UTF8)
+    fun encodeString(s: String, wstr: Boolean) {
+        val sa = s.toByteArray(
+            when {
+                wstr -> UTF16LE
+                else -> UTF8
+            }
+        )
         encodeInt(sa.size)
-        if (sa.isNotEmpty()) {
-            encodeArr(sa)
-        }
+        if (sa.isEmpty()) return
+        encodeArr(sa)
     }
 
     fun encodeFloat(f: Float) {
@@ -119,28 +128,42 @@ class OutPacket {
         buf.writeDouble(d)
     }
 
-    fun end (id: EventID) {
-        end (id, false)
+    fun end(id: EventID) {
+        end(id, false)
     }
 
-    fun end (id: EventID, c: Boolean) {
+    fun end(id: EventID, c: Boolean) {
         op = id.op
         compress = c
-        data = ByteBufUtil.getBytes(buf);
+        data = ByteBufUtil.getBytes(buf)
     }
 
-    fun end (id: EventID_UDP) {
+    fun end(o: Int) {
+        end(o, false)
+    }
+
+    fun end(o: Int, c: Boolean) {
+        op = o
+        compress = c
+        data = ByteBufUtil.getBytes(buf)
+    }
+
+    fun end(id: EventID_UDP) {
         op = id.op
-        data = ByteBufUtil.getBytes(buf);
+        data = ByteBufUtil.getBytes(buf)
     }
 
     override fun toString(): String {
         val ID = if (udp) EventID_UDP.getEventIDByOp(op) else EventID.getEventIDByOp(op)
         return String.format(
+            "%s, %s/0x%s\t| ", ID, op,
+            Integer.toHexString(op).uppercase(Locale.getDefault())
+        )
+/*        return String.format(
             "%s, %s/0x%s\t| %s", ID, op,
             Integer.toHexString(op).uppercase(Locale.getDefault()),
             Util.readableByteArray(Arrays.copyOfRange(data, 0, data.size))
-        )
+        )*/
     }
 
     fun encodePosition(position: Position?) {
@@ -162,13 +185,7 @@ class OutPacket {
         encodeFloat(rect.bottom)
     }
 
-    fun encodeTime(dynamicTerm: Boolean, time: Int) {
-        encodeBoolean(dynamicTerm)
-        encodeInt(time)
-    }
-
     fun encodeTime(time: Int) {
-        encodeBoolean(false)
         encodeInt(time)
     }
 }

@@ -8,16 +8,12 @@ import util.Position
 import util.Rect
 import util.Util
 import java.io.UnsupportedEncodingException
-import java.nio.charset.Charset
 import java.util.*
 
-/**
- * Created on 2/18/2017.
- */
 class InPacket(byteBuf: ByteBuf) {
     private val byteBuf: ByteBuf
     var udp = false
-    var a = false
+    var SerializeHelperSize = 0
     var header = 0
     var length = 0
     var compress = false
@@ -39,13 +35,13 @@ class InPacket(byteBuf: ByteBuf) {
         udp = u
     }
 
-/*    fun getData(): ByteArray {
-        return byteBuf.array()
-    }
+    /*    fun getData(): ByteArray {
+            return byteBuf.array()
+        }
 
-    fun clone(): InPacket {
-        return InPacket(byteBuf)
-    }*/
+        fun clone(): InPacket {
+            return InPacket(byteBuf)
+        }*/
 
     /**
      * Reads a single byte of the ByteBuf.
@@ -69,10 +65,13 @@ class InPacket(byteBuf: ByteBuf) {
      * @return The bytes that have been read.
      */
     fun decodeArr(size: Int): ByteArray {
-        val arr = ByteArray(size)
-        if (byteBuf.readableBytes() >= size) byteBuf.readBytes(arr)
-//        for (i in 0 until size) arr[i] = byteBuf.readByte()
-        return arr
+        if (byteBuf.readableBytes() >= size) {
+            val arr = ByteArray(size)
+            byteBuf.readBytes(arr)
+            return arr
+        } else {
+            return ByteArray(0)
+        }
     }
 
     /**
@@ -101,11 +100,15 @@ class InPacket(byteBuf: ByteBuf) {
 
     fun decodeString() = decodeString(true)
 
-    fun decodeString(w: Boolean): String {
+    fun decodeString(wstr: Boolean): String {
         val amount = decodeInt()
+        if (byteBuf.readableBytes() < amount) {
+            System.err.println("decodeString 可讀字節不夠")
+            return ""
+        }
         try {
             val bytes = decodeArr(amount)
-            return String(bytes, if (w) UTF16LE else UTF8)
+            return String(bytes, if (wstr) UTF16LE else UTF8)
         } catch (ex: UnsupportedEncodingException) {
             System.err.println(ex)
         }
@@ -113,11 +116,12 @@ class InPacket(byteBuf: ByteBuf) {
     }
 
     override fun toString(): String {
+        val offset = SerializeHelperSize * 8
         return Util.readableByteArray(
             Arrays.copyOfRange(
                 byteBuf.array(),
                 byteBuf.array().size - byteBuf.readableBytes()/*byteBuf.array()!!.size - getLength()*/,
-                if(udp) byteBuf.array().size else (if(a) 32 else 24) + length + (if(length > 0) 7 else 6)/*byteBuf.array()!!.size*/
+                if (udp) byteBuf.array().size else (24 + offset) + length + (if (length > 0) 7 else 6)/*byteBuf.array()!!.size*/
             )
         ) // Substring after copy of range xd
     }
@@ -128,6 +132,10 @@ class InPacket(byteBuf: ByteBuf) {
      */
     fun decodeLong(): Long {
         return byteBuf.readLong()
+    }
+
+    fun decodeLongLE(): Long {
+        return byteBuf.readLongLE()
     }
 
     /**

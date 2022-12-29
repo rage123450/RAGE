@@ -31,11 +31,12 @@ class UDPHandler : SimpleChannelInboundHandler<DatagramPacket>() {
         val inPacket = InPacket(dec, true)
 
         when (ID) {
-            XPT_PORT_CHECK_REQ -> { // 接收 0x11 (玩家帳號ID) FE A5 A2 3B 00 00 00 00 (玩家內網IP) 7F 00 00 01 (玩家UDP port) 32 22
-                val accid = inPacket.decodeLong()
+            // 接收 0x11 [玩家帳號ID] FE AB A2 AA 00 00 00 00 [玩家內網IP] 7F 00 00 01 [玩家UDP port ShortLE] 32 22
+            // 發送 0x12 [玩家外網IP] 7F 00 00 01 [玩家UDP port IntLE] 32 22
+            XPT_PORT_CHECK_REQ -> {
+                val accid = inPacket.decodeLongLE()
 
                 val outPacket = OutPacket(true)
-//                outPacket.encodeString(UDPIP.split(":".toRegex()).toTypedArray()[0].substring(1)) // 127.0.0.1
                 outPacket.encodeArr(byteArrayOf(127, 0, 0, 1.toByte()))
                 outPacket.encodeIntLE(datagramPacket.sender().port) // 8583
                 outPacket.end(XPT_PORT_CHECK_ACK)

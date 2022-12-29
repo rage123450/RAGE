@@ -26,6 +26,7 @@ import java.net.InetSocketAddress
 import java.security.SecureRandom
 import java.util.concurrent.locks.ReentrantLock
 
+
 /**
  * Abstraction for Netty channels that contains some attribute keys
  * for important resources used by the client during encryption,
@@ -59,6 +60,10 @@ open class NettyClient {
     var packetHmac = ByteArray(8)
     var packetPrefix  = ByteArray(2)
 
+    var nDecodeLen = -1
+
+    var firstlogin = true
+
     /**
      * Empty constructor for child class implementation.
      */
@@ -76,7 +81,7 @@ open class NettyClient {
         SecureRandom().apply {
             nextBytes(packetKey)
             nextBytes(packetHmac)
-            nextBytes(packetPrefix)
+//            nextBytes(packetPrefix) // 會影響EGS_VERIFY_ACCOUNT_REQ
         }
         ch = c
         lock = ReentrantLock(true) // note: lock is fair to ensure logical sequence is maintained server-side
@@ -99,6 +104,11 @@ open class NettyClient {
         ch!!.writeAndFlush(DatagramPacket(buf, UDPIP))
     }
 
+    fun sendPing() {
+//        write(Login.EGS_HACKING_TOOL_LIST_NOT())
+//        write(OutPacket(NetError.NET_OK, EventID.E_XIGNCODE_HEART_BEAT))
+    }
+
     /**
      * Closes this channel and session.
      */
@@ -112,6 +122,9 @@ open class NettyClient {
      */
     val ip: String
         get() = ch!!.remoteAddress().toString().split(":".toRegex()).toTypedArray()[0].substring(1)
+
+    val port: Int
+        get() = Integer.parseInt(ch!!.localAddress().toString().split(":")[1]);
 
     /**
      * Acquires the encoding state for this specific send IV. This is to

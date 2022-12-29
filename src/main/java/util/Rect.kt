@@ -2,9 +2,6 @@ package util
 
 import Netty.OutPacket
 
-/**
- * Created on 1/5/2018.
- */
 class Rect {
     /**
      * Top left x coord

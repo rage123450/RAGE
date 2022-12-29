@@ -28,12 +28,12 @@ class SelectChannelServerAcceptor : Runnable {
                 override fun initChannel(ch: SocketChannel) {
                     ch.pipeline().addLast(PacketDecoder(), ChannelHandler(), PacketEncoder())
                     val c = NettyClient(ch)
-                    println(String.format("Opened session in SelectChannelServerAcceptor [%d]", 0))
+                    println(String.format("Opened session with %s in SelectChannelServer[%d]", c.ip, 0))
+
                     ch.attr(NettyClient.CLIENT_KEY).set(c)
 //                    ch.attr(Client.CRYPTO_KEY).set(new Crypto());
 
                     val outPacket = OutPacket()
-//                    outPacket.encodeShort(0); // m_nSPIndex
                     outPacket.encodeArr(c.packetPrefix) // m_nSPIndex 長度是2
                     outPacket.encodeInt(c.packetHmac.size) // 8
                     outPacket.encodeArr(c.packetHmac)
@@ -42,10 +42,10 @@ class SelectChannelServerAcceptor : Runnable {
                     outPacket.encodeBooleanInt(true)
                     outPacket.encodeBooleanInt(false)
                     outPacket.encodeBooleanInt(false)
-                    outPacket.end(E_ACCEPT_CONNECTION_NOT, true)
+                    outPacket.end(E_ACCEPT_CONNECTION_NOT)
                     c.write(outPacket)
 
-//                    c.nWorld = lobby!!.nId.toByte()
+//                    EventManager.addFixedRateEvent(c::sendPing, 0, 4000)
                 }
             })
 
@@ -55,7 +55,7 @@ class SelectChannelServerAcceptor : Runnable {
 
             // Bind and start to accept incoming connections.
             val f = b.bind(scs.nPort).sync()
-            println(String.format("SelectChannelServerAcceptor [%d] listening on port %d", 0, 9400))
+            println(String.format("SelectChannelServer[%d] listening on port %d", 0, scs.nPort))
             // Wait until the server socket is closed.
             // In this example, this does not happen, but you can do that to gracefully
             // shut down your server.

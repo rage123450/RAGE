@@ -1,7 +1,6 @@
 package Netty
 
 //import Game.Channel.GameServer
-import EventID.E_ACCEPT_CONNECTION_NOT
 import Server.GameServer
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelInitializer
@@ -11,7 +10,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 
-class GameServerAcceptor : Runnable {
+class SubGameServerAcceptor : Runnable {
 
     lateinit var gs: GameServer
 
@@ -25,24 +24,10 @@ class GameServerAcceptor : Runnable {
             b.channel(NioServerSocketChannel::class.java)
             b.childHandler(object : ChannelInitializer<SocketChannel>() {
                 override fun initChannel(ch: SocketChannel) {
-                    ch.pipeline().addLast(PacketDecoder(), ChannelHandler(), PacketEncoder())
+                    ch.pipeline().addLast(SubPacketDecoder(), ChannelHandler(), SubPacketEncoder())
                     val c = NettyClient(ch)
-                    println(String.format("Opened session with %s in GameServerAcceptor[%d]", c.ip, gs.nId))
+                    println(String.format("Opened session with %s in SubGameServer[%d]", c.ip, gs.nId))
                     ch.attr(NettyClient.CLIENT_KEY).set(c)
-
-                    val outPacket = OutPacket()
-                    outPacket.encodeArr(c.packetPrefix) // m_nSPIndex 長度是2
-                    outPacket.encodeInt(c.packetHmac.size) // 8
-                    outPacket.encodeArr(c.packetHmac)
-                    outPacket.encodeInt(c.packetKey.size) // 8
-                    outPacket.encodeArr(c.packetKey)
-                    outPacket.encodeBooleanInt(true)
-                    outPacket.encodeBooleanInt(false)
-                    outPacket.encodeBooleanInt(false)
-                    outPacket.end(E_ACCEPT_CONNECTION_NOT)
-                    c.write(outPacket)
-
-//                    EventManager.addFixedRateEvent(c::sendPing, 0, 4000)
                 }
             })
 
@@ -51,8 +36,8 @@ class GameServerAcceptor : Runnable {
             b.childOption(ChannelOption.SO_KEEPALIVE, true)
 
             // Bind and start to accept incoming connections.
-            val f = b.bind(gs.nPort).sync()
-            println(String.format("GameServer[%d] listening on port %d", gs.nId, gs.nPort))
+            val f = b.bind(gs.nSubPort).sync()
+            println(String.format("SubGameServer[%d] listening on port %d", gs.nId, gs.nSubPort))
             // Wait until the server socket is closed.
             // In this example, this does not happen, but you can do that to gracefully
             // shut down your server.

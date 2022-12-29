@@ -9,6 +9,8 @@ import java.nio.file.Paths
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util.*
 import java.util.function.Predicate
 import java.util.regex.Pattern
@@ -23,6 +25,9 @@ import java.util.zip.Inflater
 object Util {
     private val boxedToPrimClasses: MutableMap<Class<*>, Class<*>?> = HashMap()
     private val regexPattern = Pattern.compile("^\\$2[a-z]\\$.{56}$")
+
+    fun getCurrentTime() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()).toString()
+    fun getCurrentTimeM() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date()).toString()
 
     /**
      * Gets a random element from a given List. This is done by utilizing [.getRandom].
@@ -82,13 +87,18 @@ object Util {
      */
     @Throws(IOException::class)
     fun createAndWriteToFile(path: String?, content: List<String>) {
-        BufferedWriter(OutputStreamWriter(
-            FileOutputStream(path), StandardCharsets.UTF_8)).use { writer ->
+        BufferedWriter(
+            OutputStreamWriter(
+                FileOutputStream(path), StandardCharsets.UTF_8
+            )
+        ).use { writer ->
             for (line in content) {
-                writer.write("""
+                writer.write(
+                    """
     $line
     
-    """.trimIndent())
+    """.trimIndent()
+                )
             }
         }
     }
@@ -121,7 +131,8 @@ object Util {
      * @return The current time as milliseconds since unix start time
      */
     val currentTimeLong: Long
-        get() = System.currentTimeMillis()
+        get() = Instant.now().getEpochSecond()
+//        get() = System.currentTimeMillis()
 
     val currentTimeString: String
         get() = System.currentTimeMillis().toString()
@@ -223,14 +234,17 @@ object Util {
         var s = s
         s = s.replace("|", " ")
         s = s.replace(" ", "")
+        s = s.replace("\n", "")
+        s = s.replace("\r", "")
         val len = s.length
         val data = ByteArray(len / 2)
         var i = 0
         while (i < len) {
-            data[i / 2] = ((s[i].digitToIntOrNull(16) ?: -1 shl 4)
-            + s[i + 1].digitToIntOrNull(16)!! ?: -1).toByte()
+            data[i / 2] = ((Character.digit(s[i], 16) shl 4).toByte()
+                    + Character.digit(s[i + 1], 16)).toByte()
             i += 2
         }
+
         return data
     }
 
@@ -497,7 +511,7 @@ object Util {
      * @param toAdd the set to add the files to
      * @param dir the directory to start in
      */
-    fun findAllFilesInDirectory(toAdd: MutableSet<File?>, dir: File?) {
+    fun findAllFilesInDirectory(toAdd: MutableSet<File>, dir: File) {
         // depth first search
         if (dir != null) {
             if (dir.isDirectory) {
@@ -530,52 +544,53 @@ object Util {
     fun compress(data: ByteArray): ByteArray {
         val c = Deflater()
         c.setInput(data)
+        val buf = ByteArray(data.size/*2000*/)
         c.finish()
-        val buf = ByteArray(2000)
         val count = c.deflate(buf)
         c.end()
+//        println("壓縮: " + readableByteArray(buf))
         return buf.copyOfRange(0, count)
     }
 
     fun uncompress(data: ByteArray): ByteArray {
         val uc = Inflater()
         uc.setInput(data)
-        val buf = ByteArray(2000)
+        val buf = ByteArray(data.size * 5/*2000*/)
         val count = uc.inflate(buf)
         uc.end()
         return buf.copyOfRange(0, count)
     }
 
-/*    fun compress(data: ByteArray): ByteArray {
-        val compresser = Deflater()
-        compresser.reset()
-        compresser.setInput(data)
-        compresser.finish()
-        val bos = ByteArrayOutputStream(data.size)
-        val buf = ByteArray(2000)
-        while (!compresser.finished()) {
-            val i = compresser.deflate(buf)
-            bos.write(buf, 0, i)
+    /*    fun compress(data: ByteArray): ByteArray {
+            val compresser = Deflater()
+            compresser.reset()
+            compresser.setInput(data)
+            compresser.finish()
+            val bos = ByteArrayOutputStream(data.size)
+            val buf = ByteArray(2000)
+            while (!compresser.finished()) {
+                val i = compresser.deflate(buf)
+                bos.write(buf, 0, i)
+            }
+            val output = bos.toByteArray()
+            compresser.end()
+            return output
         }
-        val output = bos.toByteArray()
-        compresser.end()
-        return output
-    }
 
-    fun uncompress(data: ByteArray): ByteArray {
-        val decompresser = Inflater()
-        decompresser.reset()
-        decompresser.setInput(data)
-        val o = ByteArrayOutputStream(data.size)
-        val buf = ByteArray(2000)
-        while (!decompresser.finished()) {
-            val i = decompresser.inflate(buf)
-            o.write(buf, 0, i)
-        }
-        val output = o.toByteArray()
-        decompresser.end()
-        return output
-    }*/
+        fun uncompress(data: ByteArray): ByteArray {
+            val decompresser = Inflater()
+            decompresser.reset()
+            decompresser.setInput(data)
+            val o = ByteArrayOutputStream(data.size)
+            val buf = ByteArray(2000)
+            while (!decompresser.finished()) {
+                val i = decompresser.inflate(buf)
+                o.write(buf, 0, i)
+            }
+            val output = o.toByteArray()
+            decompresser.end()
+            return output
+        }*/
 
     init {
         boxedToPrimClasses[Boolean::class.java] = Boolean::class.javaPrimitiveType

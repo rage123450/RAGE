@@ -10,7 +10,8 @@ open class SelectChannelServer {
         worldId = w
         val channelList: MutableList<GameServer> = ArrayList()
         for (i in 1..channelcount) {
-            channelList.add(GameServer("分流" + if (i > 9) "1" else "0" + i.toString(), i))
+            channelList.add(GameServer("魔奇", i))
+//            channelList.add(GameServer("分流" + if (i > 9) "1" else "0" + i.toString(), i))
         }
         channels = channelList
     }

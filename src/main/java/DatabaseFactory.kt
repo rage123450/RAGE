@@ -22,7 +22,6 @@ object DatabaseFactory {
             username        = "root"
             password        = ""
             maximumPoolSize = 10
-//            validate()
         }
         return HikariDataSource(config)
     }
